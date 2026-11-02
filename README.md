@@ -9,7 +9,8 @@ dela. Preto e branco, com o contorno sempre na cor inversa, em dois esquemas:
 
 São os 17 ponteiros que o Windows usa (seleção normal, ajuda, trabalhando, ocupado, precisão, texto, manuscrito, não
 disponível, os quatro de redimensionar, mover, seleção alternativa, link, local e pessoa). "Ocupado" e "Trabalhando"
-são animados: a pílula incha com mola e um cometa dá a volta dentro dela.
+são animados: no "Ocupado" a pílula incha com mola e um cometa dá a volta dentro dela; no "Trabalhando", bolinhas
+giram ao lado da seta, cada uma com o próprio contorno.
 
 Cada ponteiro vem em vários tamanhos dentro do mesmo arquivo (32 até 256 px; os animados até 128), então o controle
 de tamanho do ponteiro do Windows continua funcionando sem ficar borrado.

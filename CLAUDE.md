@@ -12,7 +12,10 @@ português. **Repositório público** (`FelipeWASD83/ilha-cursors`, MIT), escolh
   1,5 unidade na cor inversa e sombra desfocada. Uma camada "body" posterior corta com o contorno dela as de baixo:
   é o que separa a bolha da seta.
 - Linguagem da ilha: pílulas, cantos arredondados, bolha ao lado da seta (estado dividido com bolha) e o cometa em
-  órbita 3D inclinada (o que fica atrás é menor e mais apagado) com a pílula inchando por uma mola periódica.
+  órbita 3D inclinada (o que fica atrás é menor e mais apagado) com a pílula inchando por uma mola periódica (no "Ocupado").
+- **Pedidos dele na 1.0.1** (02/11/2026): seta mais arredondada (polígono menor inflado por 1,95 e o canto de dentro
+  com filete; a 1ª tentativa, com 2,2 e filete 2,2, virou uma gota e foi descartada), mão sem os traços entre os
+  dedos e "Trabalhando" só com bolinhas girando, sem a pílula de fundo (cada bolinha é um "body" com contorno).
 - Arquivos escritos à mão em `fileformats.py`: `.cur` com BMP 32 bits e máscara AND, `.ani` RIFF ACON com um `.cur`
   por quadro, 48 quadros a 2 jiffies (30 fps, 1,6 s).
 - Saída em `build/` (fora do git, ~30 MB). `install.py` gera se faltar.

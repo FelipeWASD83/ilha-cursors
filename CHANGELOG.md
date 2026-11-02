@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 (02/11/2026)
+
+**Mudou**
+- A seta está mais arredondada, nas pontas e no canto de dentro (vale também para ajuda, trabalhando, local e pessoa).
+- A mão do link não tem mais os traços entre os dedos.
+- "Trabalhando em segundo plano" agora são só bolinhas girando ao lado da seta, sem a pílula de fundo.
+
 ## 1.0.0 (02/11/2026)
 
 **Novo**

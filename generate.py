@@ -17,7 +17,7 @@ from ilhacursors.shapes import CURSORS, SCHEME_ORDER
 
 ROOT = Path(__file__).resolve().parent
 BUILD = ROOT / "build"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 STATIC_SIZES = [32, 48, 64, 96, 128, 256]
 # Windows refuses an .ani whose frames hold more than four sizes (measured on 26300: four load, five do not).

@@ -33,9 +33,11 @@ class Cursor:
 
 # --- shared parts -----------------------------------------------------------------------------------
 
-ARROW_TIP = (4.4, 3.6)
-ARROW_PTS = [ARROW_TIP, (4.4, 21.6), (8.9, 17.5), (16.2, 17.1)]
-ARROW_ROUND = 1.25
+# The polygon sits inside the final outline: it is inflated by ARROW_ROUND, which rounds every corner by that much.
+ARROW_TIP = (5.2, 5.2)
+ARROW_PTS = [ARROW_TIP, (5.2, 21.0), (9.5, 17.3), (15.9, 16.8)]
+ARROW_ROUND = 1.95
+ARROW_NOTCH = 0.9  # fillet of the inner corner between the bottom and the right edge
 
 
 def _arrow_hotspot():
@@ -49,7 +51,10 @@ def _arrow_hotspot():
 
 
 def arrow(x, y):
-    return sdf.polygon(x, y, ARROW_PTS) - ARROW_ROUND
+    tip, left, notch, right = ARROW_PTS
+    # two triangles meeting at the notch: the smooth union fillets the concave corner there
+    halves = sdf.smooth_union(sdf.polygon(x, y, [tip, left, notch]), sdf.polygon(x, y, [tip, notch, right]), ARROW_NOTCH)
+    return halves - ARROW_ROUND
 
 
 BUBBLE = (23.4, 23.4, 6.1)
@@ -112,11 +117,19 @@ def build_help(x, y, t):
     return [("body", arrow(x, y)), ("body", bubble(x, y)), ("ink", glyph)]
 
 
+def spinning_dots(x, y, t, cx, cy, radius, dot, count=4, spacing=0.92):
+    """Dots chasing each other around a circle, the head biggest; each one is a body with its own outline,
+    tail first so the head lands on top."""
+    layers = []
+    for k in reversed(range(count)):
+        a = 2 * math.pi * t - k * spacing - math.pi / 2
+        layers.append(("body", sdf.circle(x, y, cx + radius * math.cos(a), cy + radius * math.sin(a),
+                                          dot * (1 - 0.17 * k))))
+    return layers
+
+
 def build_working(x, y, t):
-    cx, cy = 22.6, 24.4
-    swell = 0.8 * spring(t)
-    pill = sdf.capsule(x, y, cx - 3.0 - swell, cy, cx + 3.0 + swell, cy, 4.15)
-    return [("body", arrow(x, y)), ("body", pill)] + orbit_comet(x, y, t, cx, cy, 3.3 + swell, 1.25, 1.12, trail=4)
+    return [("body", arrow(x, y))] + spinning_dots(x, y, t, 23.4, 23.6, 4.4, 1.9)
 
 
 def build_busy(x, y, t):
@@ -200,14 +213,7 @@ def build_link(x, y, t):
     hand = palm
     for part in [index, thumb] + fingers:
         hand = sdf.smooth_union(hand, part, 0.9)
-    seams = []
-    prev = index
-    for f in fingers:
-        # the line where a finger meets the one on its left, only above the palm
-        seam = sdf.intersect(np.abs(f) - 0.5, prev, y - 17.2, hand + 0.9)
-        seams.append(seam)
-        prev = f
-    return [("body", hand), ("ink", sdf.union(*seams))]
+    return [("body", hand)]
 
 
 def build_location(x, y, t):
