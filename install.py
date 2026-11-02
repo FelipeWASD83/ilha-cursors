@@ -74,7 +74,11 @@ def copy_files(manifest, target):
     for variant in manifest["schemes"]:
         dest = target / variant
         dest.mkdir(parents=True, exist_ok=True)
-        for name in manifest["schemes"][variant]["files"].values():
+        wanted = set(manifest["schemes"][variant]["files"].values())
+        for old in list(dest.glob("*.cur")) + list(dest.glob("*.ani")):
+            if old.name not in wanted:
+                old.unlink()  # a cursor that changed from .cur to .ani (1.1.0) leaves its old file behind
+        for name in wanted:
             shutil.copy2(BUILD / variant / name, dest / name)
 
 

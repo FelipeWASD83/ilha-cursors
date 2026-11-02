@@ -19,12 +19,27 @@ português. **Repositório público** (`FelipeWASD83/ilha-cursors`, MIT), escolh
 - **Bolsões mais estreitos que o contorno viram furinhos:** no "mover", com contorno 1,9, sobravam pontinhos do
   fundo entre as cabeças vizinhas. Uma camada "ink" em losango (`POCKET`) por baixo pinta esses bolsões na cor do
   contorno. Engrossou o contorno de novo: conferir o "mover" em 48 e 128 px.
+- **Transições de entrada (1.1.0)**, pedido dele ("clique, transição entre várias animações"): clique não existe em
+  esquema de ponteiro (o Windows não avisa o cursor). Cada cursor menos a seta toca uma entrada de 16 quadros
+  (24 no ocupado) e depois segura o último quadro por um dia (`HOLD`), ou entra no loop repetido até ~60 mil
+  passos (`MAX_STEPS`). Os quadros não se repetem no arquivo: `seq ` e `rate` do `.ani` apontam e cronometram.
+  `morph_intro` mistura o campo da seta (com a ponta no hotspot do destino, encolhida só o necessário para caber)
+  com o do destino; `pop_intro` faz a parte nova crescer de um ponto; a mola é `ease`.
+- **Misturar dois campos de distância cria retalhos**: o contorno engorda onde o campo muda devagar e aparece
+  contorno vazio onde uma parte fina está nascendo. Por isso o campo é renormalizado pelo gradiente e a camada
+  é "morph", cujo contorno só existe a até 1,9 + 0,3 de algum preenchimento (`render._morph_outline`).
+- **Não verificado:** que o Windows recomeça a animação do quadro 0 a cada troca de cursor. Se não recomeçar, a
+  entrada toca só na primeira vez e o cursor fica parado na forma final (não quebra nada). Conferir na tela exige
+  mexer o mouse dele: só com a permissão dele.
 - Arquivos escritos à mão em `fileformats.py`: `.cur` com BMP 32 bits e máscara AND, `.ani` RIFF ACON com um `.cur`
   por quadro, 96 quadros a 1 jiffy (60 fps, 1,6 s por volta; na 1.0.0 eram 48 a 30 fps).
 - Saída em `build/` (fora do git, ~30 MB). `install.py` gera se faltar.
 
 ## Armadilhas (medidas)
 
+- **O `.ani` aceita até 65.535 passos** (65.524 carrega, 65.536 não, 02/11/2026) e tempo por passo de até
+  0xFFFFFFFF jiffies (o `GetCursorFrameInfo` devolve o valor certo); o `HOLD` usa um dia para não estourar
+  conta de milissegundos.
 - **60 fps é o teto do cursor animado no Windows.** O tempo de quadro do `.ani` é um inteiro em jiffies (1/60 s):
   com 1 carrega (o `GetCursorFrameInfo` devolve 1), com 0 o Windows recusa o arquivo (26300, 02/11/2026). Ele
   pediu 250 e depois 144: não existem nesse formato. O `.ani` de 96 quadros e 4 tamanhos tem 9,4 MB e carrega.
@@ -41,6 +56,7 @@ português. **Repositório público** (`FelipeWASD83/ilha-cursors`, MIT), escolh
 
 ## Conferir
 
-- `python preview.py`: carrega cada arquivo pela API do Windows em todos os tamanhos, confere o hotspot e desenha as
+- `python preview.py`: carrega cada arquivo pela API do Windows em todos os tamanhos, confere o hotspot, o número
+  de passos e os tempos (`GetCursorFrameInfo`) e desenha as
   folhas de prévia com o que o próprio Windows pinta. Sai com código 1 se algo falhar.
 - `python -m unittest discover -s tests`: lógica do instalador contra um registro falso.

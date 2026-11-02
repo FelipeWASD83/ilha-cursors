@@ -12,8 +12,16 @@ disponível, os quatro de redimensionar, mover, seleção alternativa, link, loc
 são animados: no "Ocupado" a pílula incha com mola e um cometa dá a volta dentro dela; no "Trabalhando", bolinhas
 giram ao lado da seta, cada uma com o próprio contorno.
 
-Cada ponteiro vem em vários tamanhos dentro do mesmo arquivo (32 até 256 px; os animados até 128), então o controle
-de tamanho do ponteiro do Windows continua funcionando sem ficar borrado.
+**Transições (1.1.0):** quando o Windows troca a seta por outro ponteiro, a seta se transforma nele com a mola da
+ilha, em uns 270 ms a 60 fps: vira a mão no link, o I no texto, as setas de redimensionar e assim por diante. Na
+ajuda, no local e na pessoa a bolha nasce com mola ao lado da seta; no manuscrito a caneta cresce da ponta; no
+ocupado a seta vira a pílula e o cometa sai do meio dela. A seta normal fica parada de propósito (ela volta toda
+hora e um efeito a cada vez cansaria). Animação de clique não existe em esquema de ponteiro: o Windows não avisa o
+cursor quando você clica.
+
+Cada ponteiro vem em vários tamanhos dentro do mesmo arquivo (a seta de 32 a 256 px; os outros, que agora são
+animados, de 32 a 128, o máximo de tamanhos que o Windows aceita num animado), então o controle de tamanho do
+ponteiro do Windows continua funcionando.
 
 ## Como instalar
 

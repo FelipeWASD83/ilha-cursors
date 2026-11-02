@@ -17,13 +17,25 @@ from ilhacursors.shapes import CURSORS, SCHEME_ORDER
 
 ROOT = Path(__file__).resolve().parent
 BUILD = ROOT / "build"
-VERSION = "1.0.2"
+VERSION = "1.1.0"
 
 STATIC_SIZES = [32, 48, 64, 96, 128, 256]
 # Windows refuses an .ani whose frames hold more than four sizes (measured on 26300: four load, five do not).
 ANIMATED_SIZES = [32, 48, 64, 128]
 
 SCHEME_NAMES = {"black": "Ilha preto", "white": "Ilha branco"}
+
+# After the intro the last frame is held for a day (in 1/60 s), so the entrance plays once per switch.
+HOLD = 60 * 60 * 60 * 24
+# Windows refuses an .ani with 65,536 steps or more (65,524 loads); loops repeat until just under this.
+MAX_STEPS = 60000
+
+
+class _Layers:
+    """Gives render() a .layers for any (x, y, param) function."""
+
+    def __init__(self, fn):
+        self.layers = fn
 
 
 def hotspot_px(cursor, size):
@@ -32,23 +44,53 @@ def hotspot_px(cursor, size):
     return clamp(hx), clamp(hy)
 
 
-def images_for(cursor, variant, sizes, t=0.0):
-    return [(render(cursor, s, variant, t), *hotspot_px(cursor, s)) for s in sizes]
+def images_for(cursor, variant, sizes, t=0.0, source=None):
+    source = source or cursor
+    return [(render(source, s, variant, t), *hotspot_px(cursor, s)) for s in sizes]
+
+
+def ani_plan(cursor):
+    """The frames to draw, as (source, param), and the step list that plays them.
+
+    Static cursor with an intro: intro frames, then the final frame held.
+    Looping cursor: intro (if any), then the loop repeated up to MAX_STEPS."""
+    frames, sequence, rates = [], [], []
+    if cursor.intro:
+        intro = _Layers(cursor.intro)
+        n = cursor.intro_frames
+        frames += [(intro, i / n) for i in range(n)]
+        sequence += list(range(n))
+        rates += [1] * n
+    first = len(frames)
+    if cursor.animated:
+        frames += [(cursor, i / cursor.frames) for i in range(cursor.frames)]
+        repeats = max(1, (MAX_STEPS - len(sequence)) // cursor.frames)
+        sequence += [first + k for k in range(cursor.frames)] * repeats
+        rates += [cursor.jiffies] * (cursor.frames * repeats)
+    else:
+        frames.append((cursor, 0.0))
+        sequence.append(first)
+        rates.append(HOLD)
+    return frames, sequence, rates
 
 
 def build_variant(variant, png_dir=None):
     out = BUILD / variant
     out.mkdir(parents=True, exist_ok=True)
+    for old in list(out.glob("*.cur")) + list(out.glob("*.ani")):
+        old.unlink()
     files = {}
     for cursor in CURSORS:
-        if cursor.animated:
+        if cursor.is_ani:
+            plan, sequence, rates = ani_plan(cursor)
             frames = []
-            for i in range(cursor.frames):
-                imgs = images_for(cursor, variant, ANIMATED_SIZES, i / cursor.frames)
+            for i, (source, param) in enumerate(plan):
+                imgs = images_for(cursor, variant, ANIMATED_SIZES, param, source)
                 frames.append(cur_bytes(imgs))
-                if png_dir and i % (cursor.frames // 8) == 0:
-                    Image.fromarray(imgs[-1][0]).save(png_dir / f"{variant}-{cursor.file}-{i:02d}.png")
-            data = ani_bytes(frames, cursor.jiffies, title=f"{SCHEME_NAMES[variant]}: {cursor.label}", artist="Felipe")
+                if png_dir and i % 6 == 0:
+                    Image.fromarray(imgs[-1][0]).save(png_dir / f"{variant}-{cursor.file}-{i:03d}.png")
+            data = ani_bytes(frames, 1, title=f"{SCHEME_NAMES[variant]}: {cursor.label}", artist="Felipe",
+                             sequence=sequence, rates=rates)
             name = f"{cursor.file}.ani"
         else:
             imgs = images_for(cursor, variant, STATIC_SIZES)

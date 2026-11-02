@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.0 (02/11/2026)
+
+**Novo**
+- Transições: quando o Windows troca a seta por outro ponteiro, ela se transforma nele com a mola da ilha (uns
+  270 ms a 60 fps) e o ponteiro fica parado na forma final. Vale para link, texto, precisão, redimensionar, mover,
+  não disponível e seleção alternativa.
+- Na ajuda, no local, na pessoa e no trabalhando a bolha ou as bolinhas nascem com mola ao lado da seta; no
+  manuscrito a caneta cresce da ponta; no ocupado a seta vira a pílula e só então o cometa começa a girar.
+
+**Mudou**
+- Todos os ponteiros menos a seta agora são animados e por isso vão até 128 px (a seta continua até 256).
+
 ## 1.0.2 (02/11/2026)
 
 **Mudou**

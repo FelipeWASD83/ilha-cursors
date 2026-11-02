@@ -19,8 +19,10 @@ class Cursor:
     label: str                # role name as Windows shows it (pt-BR)
     hotspot: tuple            # design units
     build: Callable           # (x, y, t) -> list of layers
-    frames: int = 0           # 0 = static .cur, otherwise .ani
-    jiffies: int = 2          # frame time in 1/60 s
+    frames: int = 0           # frames of the loop; 0 = the cursor is still once it has arrived
+    jiffies: int = 2          # loop frame time in 1/60 s
+    intro: Callable = None    # (x, y, u) -> layers, u from 0 to 1: played once each time Windows switches to it
+    intro_frames: int = 0
     notes: str = field(default="")
 
     def layers(self, x, y, t):
@@ -29,6 +31,10 @@ class Cursor:
     @property
     def animated(self):
         return self.frames > 0
+
+    @property
+    def is_ani(self):
+        return self.animated or self.intro is not None
 
 
 # --- shared parts -----------------------------------------------------------------------------------
@@ -97,6 +103,94 @@ def double_arrow(u, v, half=12.0, head_len=5.2, head_half=4.5, shaft=1.2):
     heads = sdf.union(head_a, head_b) - 0.85
     body = sdf.capsule(u, v, -base, 0, base, 0, shaft)
     return sdf.smooth_union(heads, body, 0.8)
+
+
+# --- intros: the arrow turning into each cursor with the island's spring ---------------------------------
+
+INTRO_FRAMES = 16  # 267 ms at 60 fps
+
+
+def ease(u, damping=4.0, omega=1.5 * math.pi):
+    """0 -> 1 with the island's spring: first reaches 1 at u = 1/3, ~7% overshoot, exactly 1 at u = 1."""
+    if u <= 0:
+        return 0.0
+    if u >= 1:
+        return 1.0
+    return 1 - math.exp(-damping * u) * math.cos(omega * u)
+
+
+def _arrow_extent():
+    """How far the drawn arrow (outline included) reaches from its hotspot: left, up, right, down."""
+    c = np.linspace(0, 32, 641)
+    x, y = np.meshgrid(c, c)
+    inside = arrow(x, y) < 1.9 + 0.4
+    hx, hy = _arrow_hotspot()
+    xs, ys = x[inside], y[inside]
+    return hx - xs.min(), hy - ys.min(), xs.max() - hx, ys.max() - hy
+
+
+ARROW_EXTENT = _arrow_extent()
+
+
+def arrow_at(x, y, hx, hy, margin=0.7):
+    """The arrow with its tip on (hx, hy), shrunk only as much as it takes to stay on the canvas."""
+    left, up, right, down = ARROW_EXTENT
+    room = [(hx - margin) / left, (hy - margin) / up, (32 - margin - hx) / right, (32 - margin - hy) / down]
+    k = min(1.0, *room)
+    ax, ay = _arrow_hotspot()
+    return arrow(ax + (x - hx) / k, ay + (y - hy) / k) * k
+
+
+def scaled(build, x, y, cx, cy, k, t=0.0):
+    """`build`'s layers scaled by k around (cx, cy)."""
+    k = max(k, 0.02)
+    return [(kind, d * k) for kind, d in build(cx + (x - cx) / k, cy + (y - cy) / k, t)]
+
+
+def renormalise(d, x):
+    """A blend of two distance fields is no longer a distance: where it changes slowly the outline
+    would swell into patches. Dividing by the gradient length brings it back to one near the edge."""
+    step = x[0, 1] - x[0, 0]
+    gy, gx = np.gradient(d, step)
+    return d / np.maximum(np.hypot(gx, gy), 0.25)
+
+
+def morph_intro(build, hotspot):
+    """The arrow flowing into the cursor's shape: each body is a blend of the two distance fields,
+    so the outline stays one closed line all the way; details grow in at the end."""
+    hx, hy = hotspot
+
+    def intro(x, y, u):
+        e = ease(u)
+        a = arrow_at(x, y, hx, hy)
+        out = []
+        for kind, d in build(x, y, 0.0):
+            if kind == "body":
+                out.append(("morph", renormalise(a + (d - a) * e, x)))
+            else:
+                out.append((kind, d + (1 - min(e, 1.0)) * 6.0))
+        return out
+    return intro
+
+
+def pop_intro(build, cx, cy, keep=0):
+    """The first `keep` layers stay as they are; the rest grow out of (cx, cy) with the spring."""
+    def intro(x, y, u):
+        e = ease(u)
+        return build(x, y, 0.0)[:keep] + scaled(build, x, y, cx, cy, e)[keep:]
+    return intro
+
+
+def busy_intro(x, y, u):
+    """Arrow into the island's pill, then the comet comes out of the middle."""
+    e1 = ease(u / 0.62)
+    e2 = ease((u - 0.38) / 0.62)
+    a = arrow_at(x, y, 16.0, 16.0)
+    pill = build_busy(x, y, 0.0)[0][1]
+    out = [("morph", renormalise(a + (pill - a) * e1, x))]
+    if e2 > 0:
+        out += scaled(build_busy, x, y, 16.0, 16.0, e2)[1:]
+    return out
 
 
 # --- the roles --------------------------------------------------------------------------------------
@@ -241,24 +335,41 @@ def build_person(x, y, t):
     return [("body", arrow(x, y)), ("body", bubble(x, y)), ("ink", sdf.union(head, shoulders))]
 
 
+AH = _arrow_hotspot()
+BX, BY, _ = BUBBLE
+
+
+def _morph(file, role, label, hotspot, build, **kw):
+    return Cursor(file, role, label, hotspot, build, intro=morph_intro(build, hotspot), intro_frames=INTRO_FRAMES, **kw)
+
+
+def _badge(file, role, label, build):
+    return Cursor(file, role, label, AH, build, intro=pop_intro(build, BX, BY, keep=1), intro_frames=INTRO_FRAMES)
+
+
+# The normal arrow stays still: it comes back all the time (leaving a link, crossing windows) and an
+# entrance every time would get old fast.
 CURSORS = [
-    Cursor("arrow", "Arrow", "Seleção normal", _arrow_hotspot(), build_arrow),
-    Cursor("help", "Help", "Seleção de ajuda", _arrow_hotspot(), build_help),
-    Cursor("working", "AppStarting", "Trabalhando em segundo plano", _arrow_hotspot(), build_working, frames=96, jiffies=1),
-    Cursor("busy", "Wait", "Ocupado", (16.0, 16.0), build_busy, frames=96, jiffies=1),
-    Cursor("precision", "Crosshair", "Seleção de precisão", (16.0, 16.0), build_precision),
-    Cursor("text", "IBeam", "Seleção de texto", (16.0, 16.0), build_text),
-    Cursor("handwriting", "NWPen", "Manuscrito", (4.6, 27.4), build_handwriting),
-    Cursor("unavailable", "No", "Não disponível", (16.0, 16.0), build_unavailable),
-    Cursor("resize-ns", "SizeNS", "Redimensionamento vertical", (16.0, 16.0), _resize(90)),
-    Cursor("resize-ew", "SizeWE", "Redimensionamento horizontal", (16.0, 16.0), _resize(0)),
-    Cursor("resize-nwse", "SizeNWSE", "Redimensionamento diagonal 1", (16.0, 16.0), _resize(45)),
-    Cursor("resize-nesw", "SizeNESW", "Redimensionamento diagonal 2", (16.0, 16.0), _resize(-45)),
-    Cursor("move", "SizeAll", "Mover", (16.0, 16.0), build_move),
-    Cursor("alternate", "UpArrow", "Seleção alternativa", (16.0, 3.4), build_alternate),
-    Cursor("link", "Hand", "Seleção de link", (12.1, 2.6), build_link),
-    Cursor("location", "Pin", "Seleção de local", _arrow_hotspot(), build_location),
-    Cursor("person", "Person", "Seleção de pessoa", _arrow_hotspot(), build_person),
+    Cursor("arrow", "Arrow", "Seleção normal", AH, build_arrow),
+    _badge("help", "Help", "Seleção de ajuda", build_help),
+    Cursor("working", "AppStarting", "Trabalhando em segundo plano", AH, build_working, frames=96, jiffies=1,
+           intro=pop_intro(build_working, 23.4, 23.6, keep=1), intro_frames=INTRO_FRAMES),
+    Cursor("busy", "Wait", "Ocupado", (16.0, 16.0), build_busy, frames=96, jiffies=1,
+           intro=busy_intro, intro_frames=24),
+    _morph("precision", "Crosshair", "Seleção de precisão", (16.0, 16.0), build_precision),
+    _morph("text", "IBeam", "Seleção de texto", (16.0, 16.0), build_text),
+    Cursor("handwriting", "NWPen", "Manuscrito", (4.6, 27.4), build_handwriting,
+           intro=pop_intro(build_handwriting, 4.6, 27.4), intro_frames=INTRO_FRAMES),
+    _morph("unavailable", "No", "Não disponível", (16.0, 16.0), build_unavailable),
+    _morph("resize-ns", "SizeNS", "Redimensionamento vertical", (16.0, 16.0), _resize(90)),
+    _morph("resize-ew", "SizeWE", "Redimensionamento horizontal", (16.0, 16.0), _resize(0)),
+    _morph("resize-nwse", "SizeNWSE", "Redimensionamento diagonal 1", (16.0, 16.0), _resize(45)),
+    _morph("resize-nesw", "SizeNESW", "Redimensionamento diagonal 2", (16.0, 16.0), _resize(-45)),
+    _morph("move", "SizeAll", "Mover", (16.0, 16.0), build_move),
+    _morph("alternate", "UpArrow", "Seleção alternativa", (16.0, 3.4), build_alternate),
+    _morph("link", "Hand", "Seleção de link", (12.1, 2.6), build_link),
+    _badge("location", "Pin", "Seleção de local", build_location),
+    _badge("person", "Person", "Seleção de pessoa", build_person),
 ]
 
 # Order of the comma list in HKCU\Control Panel\Cursors\Schemes.

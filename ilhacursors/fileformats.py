@@ -37,10 +37,20 @@ def _chunk(tag, data):
     return tag + struct.pack("<I", len(data)) + data + pad
 
 
-def ani_bytes(frames, jiffies, title="", artist=""):
-    """frames: list of cur_bytes() results, all shown for `jiffies` sixtieths of a second."""
-    anih = struct.pack("<9I", 36, len(frames), len(frames), 0, 0, 0, 0, jiffies, 1)  # 1 = AF_ICON
+def ani_bytes(frames, jiffies, title="", artist="", sequence=None, rates=None):
+    """frames: list of cur_bytes() results, all shown for `jiffies` sixtieths of a second.
+
+    `sequence` (frame index per step) lets steps reuse frames, and `rates` (jiffies per step) gives each
+    step its own time; together they make a one-shot intro that ends on a frame held for hours."""
+    steps = len(sequence) if sequence is not None else len(frames)
+    flags = 1 | (2 if sequence is not None else 0)  # AF_ICON | AF_SEQUENCE
+    anih = struct.pack("<9I", 36, len(frames), steps, 0, 0, 0, 0, jiffies, flags)
     body = b"ACON" + _chunk(b"anih", anih)
+    if rates is not None:
+        assert len(rates) == steps
+        body += _chunk(b"rate", struct.pack(f"<{steps}I", *rates))
+    if sequence is not None:
+        body += _chunk(b"seq ", struct.pack(f"<{steps}I", *sequence))
     info = b""
     if title:
         info += _chunk(b"INAM", title.encode("cp1252") + b"\0")

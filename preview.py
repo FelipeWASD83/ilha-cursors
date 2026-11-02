@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from generate import ANIMATED_SIZES, BUILD, STATIC_SIZES, hotspot_px
+from generate import ANIMATED_SIZES, BUILD, STATIC_SIZES, ani_plan, hotspot_px
 from ilhacursors.shapes import CURSORS
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -43,6 +43,21 @@ class ICONINFO(ctypes.Structure):
 
 
 user32.GetIconInfo.argtypes = [wintypes.HANDLE, ctypes.POINTER(ICONINFO)]
+# undocumented but exported since Windows 2000: the rate (jiffies) of one step and the step count
+user32.GetCursorFrameInfo.restype = wintypes.HANDLE
+user32.GetCursorFrameInfo.argtypes = [wintypes.HANDLE, wintypes.DWORD, wintypes.DWORD,
+                                      ctypes.POINTER(wintypes.DWORD), ctypes.POINTER(wintypes.DWORD)]
+
+
+def frame_info(h, step):
+    rate, steps = wintypes.DWORD(), wintypes.DWORD()
+    user32.GetCursorFrameInfo(h, 0, step, ctypes.byref(rate), ctypes.byref(steps))
+    return rate.value, steps.value
+
+
+def settled_step(cursor):
+    """The step that shows the cursor in its final shape (after the intro)."""
+    return cursor.intro_frames if cursor.intro else 0
 
 
 def load(path, size):
@@ -115,16 +130,22 @@ def check_and_sheet(variant, files):
     for c, cursor in enumerate(CURSORS):
         path = folder / files[cursor.role]
         d.text((120 + c * cell + 4, 60 - label_h + 2), cursor.file, fill=(60, 60, 60), font=font(11))
-        sizes = ANIMATED_SIZES if cursor.animated else STATIC_SIZES
+        sizes = ANIMATED_SIZES if cursor.is_ani else STATIC_SIZES
         for s in sizes:
             h = load(path, s)
             hs = hotspot_of(h)
             if hs != hotspot_px(cursor, s):
                 problems.append(f"{path.name} {s}px: hotspot {hs}, expected {hotspot_px(cursor, s)}")
+            if cursor.is_ani and s == sizes[0]:
+                _, sequence, rates = ani_plan(cursor)
+                got = [frame_info(h, i) for i in (0, len(sequence) - 1)]
+                want = [(rates[0], len(sequence)), (rates[-1], len(sequence))]
+                if got != want:
+                    problems.append(f"{path.name}: Windows reads (rate, steps) {got}, expected {want}")
             user32.DestroyCursor(h)
         for r, (bg, s) in enumerate(rows):
             h = load(path, s)
-            img = draw(h, s, backgrounds(s)[bg])
+            img = draw(h, s, backgrounds(s)[bg], settled_step(cursor))
             user32.DestroyCursor(h)
             tile = Image.fromarray(img)
             scale = max(1, (cell - 8) // s)
@@ -136,17 +157,25 @@ def check_and_sheet(variant, files):
         d.text((10, 60 + r * cell + cell // 2 - 8), f"{bg} {s}px", fill=(60, 60, 60), font=font(13))
     sheet.save(BUILD / f"preview-{variant}.png")
 
-    # animation strip: every 4th frame of the animated cursors at 64 px, light and dark
-    anim = [c for c in CURSORS if c.animated]
+    # animation strip at 64 px: the intro every other step up to the settled frame, then a few loop steps
+    anim = [c for c in CURSORS if c.is_ani]
     s = 64
-    steps = list(range(0, anim[0].frames, anim[0].frames // 12))
-    strip = Image.new("RGB", (len(steps) * (s + 8) + 8, len(anim) * 2 * (s + 8) + 8), (250, 250, 250))
-    for a, cursor in enumerate(anim):
+    bg = "light" if variant == "black" else "dark"
+    rows = []
+    for cursor in anim:
+        steps = list(range(0, cursor.intro_frames, 2)) + [settled_step(cursor)] if cursor.intro else []
+        if cursor.animated:
+            steps += [settled_step(cursor) + k * cursor.frames // 6 for k in range(1, 6)]
+        rows.append((cursor, steps))
+    cols = max(len(st) for _, st in rows)
+    strip = Image.new("RGB", (110 + cols * (s + 6), len(rows) * (s + 6) + 8), (250, 250, 250))
+    d = ImageDraw.Draw(strip)
+    for r, (cursor, steps) in enumerate(rows):
+        d.text((8, 8 + r * (s + 6) + s // 2 - 8), cursor.file, fill=(60, 60, 60), font=font(12))
         h = load(folder / files[cursor.role], s)
         for i, step in enumerate(steps):
-            for k, bg in enumerate(("light", "dark")):
-                img = draw(h, s, backgrounds(s)[bg], step)
-                strip.paste(Image.fromarray(img), (8 + i * (s + 8), 8 + (a * 2 + k) * (s + 8)))
+            img = draw(h, s, backgrounds(s)[bg], step)
+            strip.paste(Image.fromarray(img), (110 + i * (s + 6), 8 + r * (s + 6)))
         user32.DestroyCursor(h)
     strip.save(BUILD / f"preview-anim-{variant}.png")
     return problems

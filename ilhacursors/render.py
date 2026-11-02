@@ -4,7 +4,9 @@ A cursor is a list of layers in painting order. Each layer is (kind, distance):
 - "body": the island look, a fill in the variant colour with an outline in the inverse colour;
 - "ink": drawn in the outline colour (glyphs, dots);
 - "fill": drawn in the fill colour (holes inside a glyph);
-- ("dim", a): ink mixed towards the fill colour, a = 1 is full ink (the dots behind the orbit).
+- ("dim", a): ink mixed towards the fill colour, a = 1 is full ink (the dots behind the orbit);
+- "morph": a body whose field is a blend of two shapes (the intros); its outline only exists around
+  real fill, so a part that is still being born never shows as an empty outline.
 A later body's outline cuts across the bodies under it, which is what separates the badge from the arrow.
 """
 
@@ -61,6 +63,20 @@ def _shift(a, dx_px, dy_px):
     return out
 
 
+def _near(mask, radius):
+    """True wherever a True of `mask` lies within a square of half-side `radius` pixels."""
+    pad = np.pad(mask.astype(np.int32), radius + 1)
+    sat = pad.cumsum(0).cumsum(1)
+    n = 2 * radius + 1
+    h, w = mask.shape
+    total = sat[n:n + h, n:n + w] - sat[:h, n:n + w] - sat[n:n + h, :w] + sat[:h, :w]
+    return total > 0
+
+
+def _morph_outline(d, unit):
+    return _coverage(d - OUTLINE, unit) * _near(d < 0, int(np.ceil((OUTLINE + 0.3) / unit)))
+
+
 def render(cursor, size, variant, t=0.0):
     fill, ink = VARIANTS[variant]
     x, y, unit = grid(size)
@@ -75,8 +91,11 @@ def render(cursor, size, variant, t=0.0):
         alpha = a + alpha * (1 - a)
 
     bodies = [d for kind, d in layers if kind == "body"]
-    if bodies:
-        silhouette = _coverage(np.minimum.reduce(bodies) - OUTLINE, unit)
+    morphs = [_morph_outline(d, unit) for kind, d in layers if kind == "morph"]
+    if bodies or morphs:
+        silhouette = _coverage(np.minimum.reduce(bodies) - OUTLINE, unit) if bodies else np.zeros_like(x)
+        for m in morphs:
+            silhouette = np.maximum(silhouette, m)
         px = 1.0 / unit
         shadow = _shift(silhouette, SHADOW_OFFSET[0] * px, SHADOW_OFFSET[1] * px)
         shadow = _blur(shadow, SHADOW_SIGMA * px) * SHADOW_ALPHA
@@ -85,6 +104,9 @@ def render(cursor, size, variant, t=0.0):
     for kind, d in layers:
         if kind == "body":
             over(ink, _coverage(d - OUTLINE, unit))
+            over(fill, _coverage(d, unit))
+        elif kind == "morph":
+            over(ink, _morph_outline(d, unit))
             over(fill, _coverage(d, unit))
         elif kind == "ink":
             over(ink, _coverage(d, unit))
