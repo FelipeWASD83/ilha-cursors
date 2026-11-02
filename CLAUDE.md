@@ -3,7 +3,7 @@
 Esquemas de ponteiro do Windows inspirados na `ilha` (pedido do Felipe em 02/11/2026: "cursor moderno, tema preto e
 branco, outline da cor inversa, inspirado na ilha"). Dois esquemas, preto com contorno branco e branco com contorno
 preto. O README explica o uso; aqui ficam as decisões e as armadilhas. Código em inglês, docs e changelog em
-português.
+português. **Repositório público** (`FelipeWASD83/ilha-cursors`, MIT), escolha dele ao criar.
 
 ## Como é feito
 
