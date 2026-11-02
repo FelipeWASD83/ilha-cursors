@@ -244,8 +244,8 @@ def build_person(x, y, t):
 CURSORS = [
     Cursor("arrow", "Arrow", "Seleção normal", _arrow_hotspot(), build_arrow),
     Cursor("help", "Help", "Seleção de ajuda", _arrow_hotspot(), build_help),
-    Cursor("working", "AppStarting", "Trabalhando em segundo plano", _arrow_hotspot(), build_working, frames=48),
-    Cursor("busy", "Wait", "Ocupado", (16.0, 16.0), build_busy, frames=48),
+    Cursor("working", "AppStarting", "Trabalhando em segundo plano", _arrow_hotspot(), build_working, frames=96, jiffies=1),
+    Cursor("busy", "Wait", "Ocupado", (16.0, 16.0), build_busy, frames=96, jiffies=1),
     Cursor("precision", "Crosshair", "Seleção de precisão", (16.0, 16.0), build_precision),
     Cursor("text", "IBeam", "Seleção de texto", (16.0, 16.0), build_text),
     Cursor("handwriting", "NWPen", "Manuscrito", (4.6, 27.4), build_handwriting),

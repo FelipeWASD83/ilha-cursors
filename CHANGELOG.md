@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2 (02/11/2026)
+
+**Mudou**
+- "Ocupado" e "Trabalhando" agora animam a 60 quadros por segundo (eram 30), o máximo que o Windows aceita
+  em cursor animado. A volta continua levando 1,6 s.
+
 ## 1.0.1 (02/11/2026)
 
 **Mudou**

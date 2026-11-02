@@ -20,11 +20,14 @@ português. **Repositório público** (`FelipeWASD83/ilha-cursors`, MIT), escolh
   fundo entre as cabeças vizinhas. Uma camada "ink" em losango (`POCKET`) por baixo pinta esses bolsões na cor do
   contorno. Engrossou o contorno de novo: conferir o "mover" em 48 e 128 px.
 - Arquivos escritos à mão em `fileformats.py`: `.cur` com BMP 32 bits e máscara AND, `.ani` RIFF ACON com um `.cur`
-  por quadro, 48 quadros a 2 jiffies (30 fps, 1,6 s).
+  por quadro, 96 quadros a 1 jiffy (60 fps, 1,6 s por volta; na 1.0.0 eram 48 a 30 fps).
 - Saída em `build/` (fora do git, ~30 MB). `install.py` gera se faltar.
 
 ## Armadilhas (medidas)
 
+- **60 fps é o teto do cursor animado no Windows.** O tempo de quadro do `.ani` é um inteiro em jiffies (1/60 s):
+  com 1 carrega (o `GetCursorFrameInfo` devolve 1), com 0 o Windows recusa o arquivo (26300, 02/11/2026). Ele
+  pediu 250 e depois 144: não existem nesse formato. O `.ani` de 96 quadros e 4 tamanhos tem 9,4 MB e carrega.
 - **O Windows recusa `.ani` com mais de 4 tamanhos por quadro** (26300, 02/11/2026: 4 carrega, 5 não, sem erro,
   `LoadCursorFromFile` só devolve nulo). Por isso os animados levam 32, 48, 64 e 128. O `.cur` estático aceita os 6
   (32 a 256).

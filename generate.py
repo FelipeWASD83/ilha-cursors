@@ -17,7 +17,7 @@ from ilhacursors.shapes import CURSORS, SCHEME_ORDER
 
 ROOT = Path(__file__).resolve().parent
 BUILD = ROOT / "build"
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 STATIC_SIZES = [32, 48, 64, 96, 128, 256]
 # Windows refuses an .ani whose frames hold more than four sizes (measured on 26300: four load, five do not).
@@ -46,7 +46,7 @@ def build_variant(variant, png_dir=None):
             for i in range(cursor.frames):
                 imgs = images_for(cursor, variant, ANIMATED_SIZES, i / cursor.frames)
                 frames.append(cur_bytes(imgs))
-                if png_dir and i % 6 == 0:
+                if png_dir and i % (cursor.frames // 8) == 0:
                     Image.fromarray(imgs[-1][0]).save(png_dir / f"{variant}-{cursor.file}-{i:02d}.png")
             data = ani_bytes(frames, cursor.jiffies, title=f"{SCHEME_NAMES[variant]}: {cursor.label}", artist="Felipe")
             name = f"{cursor.file}.ani"

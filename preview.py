@@ -139,7 +139,7 @@ def check_and_sheet(variant, files):
     # animation strip: every 4th frame of the animated cursors at 64 px, light and dark
     anim = [c for c in CURSORS if c.animated]
     s = 64
-    steps = list(range(0, anim[0].frames, 4))
+    steps = list(range(0, anim[0].frames, anim[0].frames // 12))
     strip = Image.new("RGB", (len(steps) * (s + 8) + 8, len(anim) * 2 * (s + 8) + 8), (250, 250, 250))
     for a, cursor in enumerate(anim):
         h = load(folder / files[cursor.role], s)
