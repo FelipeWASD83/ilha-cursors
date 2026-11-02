@@ -50,7 +50,7 @@ tamanho e desenha `build/preview-black.png`, `build/preview-white.png` e as tira
 (`build/preview-anim-*.png`) sobre fundo claro, escuro e colorido. Ele não muda nada no sistema. Rodar o
 `install.py` de novo depois aplica o desenho novo.
 
-Valores fáceis de ajustar, em `ilhacursors/render.py`: `OUTLINE` (espessura do contorno, 1.5 = 1,5 px no tamanho
+Valores fáceis de ajustar, em `ilhacursors/render.py`: `OUTLINE` (espessura do contorno, 1.9 = 1,9 px no tamanho
 32), `SHADOW_ALPHA` (força da sombra, 0 tira) e `SHADOW_SIGMA` (quanto a sombra espalha).
 
 Testes do instalador (com registro falso, não mexem no sistema): `python -m unittest discover -s tests`.

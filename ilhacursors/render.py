@@ -11,7 +11,7 @@ A later body's outline cuts across the bodies under it, which is what separates 
 import numpy as np
 
 CANVAS = 32.0
-OUTLINE = 1.5
+OUTLINE = 1.9
 SUPERSAMPLE = 3
 SHADOW_OFFSET = (0.35, 1.0)
 SHADOW_SIGMA = 1.15

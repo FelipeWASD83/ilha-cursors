@@ -187,11 +187,18 @@ def _resize(angle):
     return build
 
 
+POCKET = 7.9
+
+
 def build_move(x, y, t):
     u, v = sdf.rotate(x, y, 16.0, 16.0, 0)
     kw = dict(half=12.6, head_len=4.6, head_half=3.9, shaft=1.15)
     cross = sdf.smooth_union(double_arrow(u, v, **kw), double_arrow(v, u, **kw), 1.2)
-    return [("body", sdf.smooth_union(cross, sdf.circle(x, y, 16, 16, 2.3), 0.8))]
+    body = sdf.smooth_union(cross, sdf.circle(x, y, 16, 16, 2.3), 0.8)
+    # the pockets between neighbouring heads are narrower than the outline; paint them in the outline
+    # colour first so they read as outline instead of tiny holes
+    pockets = (np.abs(u) + np.abs(v)) / math.sqrt(2) - POCKET
+    return [("ink", pockets), ("body", body)]
 
 
 def build_alternate(x, y, t):
