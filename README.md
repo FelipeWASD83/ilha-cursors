@@ -1,6 +1,6 @@
 # Cursores da Ilha
 
-Um conjunto de ponteiros do mouse para o Windows inspirado na [Ilha](../ilha): formas de pílula, cantos macios,
+Um conjunto de ponteiros do mouse para o Windows inspirado na [Ilha](https://github.com/FelipeWASD83/ilha): formas de pílula, cantos macios,
 uma bolha ao lado da seta (como a ilha dividida com bolha) e o cometa orbitando em 3D das animações de carregamento
 dela. Preto e branco, com o contorno sempre na cor inversa, em dois esquemas:
 
