@@ -54,6 +54,16 @@ português. **Repositório público** (`FelipeWASD83/ilha-cursors`, MIT), escolh
   ele pedir. O primeiro install guarda os valores de antes em `backup.json`, que o `--uninstall` devolve; installs
   seguintes não sobrescrevem esse backup.
 
+## Release (formato igual ao do `clave`, `relogio-mond` e `ilha`)
+
+- `versao.json` (`versao`, `repositorio`) anda junto com `VERSION` do `generate.py` e o topo do `CHANGELOG.md`;
+  o `ferramentas\publicar-versao.ps1` recusa se os três e o `build\manifest.json` não baterem.
+- O pacote é `ilha-cursors-<versão>.zip` (pasta `ilha-cursors/` dentro): `build\black`, `build\white`,
+  `build\manifest.json`, `install.py`, `install.bat`, README, LICENSE, CHANGELOG e `versao.json`. Instalar a partir
+  dele só pede Python (sem numpy nem Pillow), porque o `build` já vem pronto. É a mesma pasta que o
+  `pacote-windows-bonito` embute. Sem `-SoGerar` o script faz a release no GitHub (**decisão do Felipe**).
+- Ramo principal aqui é `master` (os outros projetos usam `main`).
+
 ## Conferir
 
 - `python preview.py`: carrega cada arquivo pela API do Windows em todos os tamanhos, confere o hotspot, o número

@@ -43,6 +43,11 @@ e aplica o preto na hora. Outras opções:
 Depois de instalado, dá para trocar entre os dois pelo Windows: **Configurações > Bluetooth e dispositivos > Mouse >
 Configurações adicionais do mouse > Ponteiros**, campo **Esquema**.
 
+Sem querer gerar nada: a [página de releases](https://github.com/FelipeWASD83/ilha-cursors/releases) tem o zip
+`ilha-cursors-<versão>.zip` com os cursores já prontos (só precisa do Python para o `install.py`). O setup
+[Pacote Windows Bonito](https://github.com/FelipeWASD83/pacote-windows-bonito) instala estes cursores junto com a Ilha,
+o Relógio Mond e o Fundo Vivo.
+
 ## Mudar o desenho
 
 O desenho é todo vetorial, em `ilhacursors/shapes.py` (uma função por ponteiro). Depois de mexer:
