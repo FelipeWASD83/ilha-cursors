@@ -61,7 +61,7 @@ português. **Repositório público** (`FelipeWASD83/ilha-cursors`, MIT), escolh
 - O pacote é `ilha-cursors-<versão>.zip` (pasta `ilha-cursors/` dentro): `build\black`, `build\white`,
   `build\manifest.json`, `install.py`, `install.bat`, README, LICENSE, CHANGELOG e `versao.json`. Instalar a partir
   dele só pede Python (sem numpy nem Pillow), porque o `build` já vem pronto. É a mesma pasta que o
-  `pacote-windows-bonito` embute. Sem `-SoGerar` o script faz a release no GitHub (**decisão do Felipe**).
+  `desktop-glow` embute. Sem `-SoGerar` o script faz a release no GitHub (**decisão do Felipe**).
 - Ramo principal aqui é `master` (os outros projetos usam `main`).
 
 ## Conferir
